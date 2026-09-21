@@ -163,7 +163,10 @@ STORAGES = {
         'BACKEND': 'django.core.files.storage.FileSystemStorage',
     },
     'staticfiles': {
-        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        # Sengaja TANPA manifest: kalau staticfiles.json hilang atau basi,
+        # varian Manifest membuat seluruh halaman 500. Versi ini tetap
+        # mengompresi tapi gagal dengan anggun.
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
     },
 }
 
