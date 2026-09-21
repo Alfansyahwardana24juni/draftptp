@@ -1002,9 +1002,23 @@ tbody tr:hover td { background: var(--surface-2); }
   .card-body { padding: 14px; }
   .subnav { margin: 0 -14px 16px; padding: 8px 14px; }
   .subnav-meta { display: none; }
-  .actionbar { margin: 18px -14px 0; padding: 11px 14px; flex-wrap: wrap; }
+  /* Di layar kecil action bar dipatok ke dasar layar. Ruang bawah form
+     diatur lewat JS sesuai tinggi bar, supaya field terakhir tidak tertutup. */
+  .actionbar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    margin: 0;
+    z-index: 45;
+    padding: 11px 14px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 18px rgba(16, 24, 40, 0.10);
+  }
+  :root[data-theme="dark"] .actionbar { box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.5); }
   .actionbar .btn { flex: 1 1 100%; }
   .actionbar .spacer { display: none; }
+  /* Nilai cadangan kalau JS belum sempat jalan */
+  #main-form { padding-bottom: 168px; }
 
   /* 16px mencegah iOS auto-zoom saat field difokus */
   input[type="text"], input[type="number"], input[type="date"],

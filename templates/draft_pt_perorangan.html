@@ -452,6 +452,24 @@ $('#m_input').on('input', function () {
 });
 
 /* ============================================================
+   Ruang bawah form supaya tidak tertutup action bar yang dipatok
+   ============================================================ */
+function aturRuangActionbar() {
+  var bar = document.querySelector('.actionbar');
+  var form = document.getElementById('main-form');
+  if (!bar || !form) return;
+  var dipatok = getComputedStyle(bar).position === 'fixed';
+  form.style.paddingBottom = dipatok ? (bar.offsetHeight + 20) + 'px' : '';
+}
+$(window).on('load resize', aturRuangActionbar);
+$(aturRuangActionbar);
+/* Tinggi bar berubah saat teks status berganti */
+if ('ResizeObserver' in window) {
+  var bar = document.querySelector('.actionbar');
+  if (bar) new ResizeObserver(aturRuangActionbar).observe(bar);
+}
+
+/* ============================================================
    Sub-nav: scroll halus + tandai bagian yang sedang dilihat
    ============================================================ */
 $('.subnav-row a[data-sec]').on('click', function (e) {
