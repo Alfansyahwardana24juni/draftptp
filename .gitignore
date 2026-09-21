@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenv
+.venv/
+venv/
+env/
+ENV/
+
+# Rahasia & database lokal
+.env
+db.sqlite3
+db.sqlite3.*
+*.bak
+
+# Arsip & backup (jangan ikut ke repo / Vercel)
+_arsip_lama/
+_backup_sebelum_pangkas/
+
+# Dump data (berisi data pribadi)
+data_lama.json
+data_clip.json
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+
+# CATATAN: staticfiles/ SENGAJA tidak diabaikan.
+# Vercel tidak menjalankan collectstatic, jadi hasilnya harus ikut di repo
+# supaya WhiteNoise bisa melayaninya. Setelah mengubah static/, jalankan:
+#   python manage.py collectstatic --noinput --clear

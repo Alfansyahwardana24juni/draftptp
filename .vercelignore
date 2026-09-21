@@ -1,0 +1,19 @@
+# Jangan diunggah ke Vercel
+_arsip_lama/
+_backup_sebelum_pangkas/
+*.bak
+db.sqlite3
+db.sqlite3.*
+static/
+scripts/
+admin-notaris/
+__pycache__/
+*.py[cod]
+.env
+.venv/
+venv/
+create_admin.py
+build.sh
+Procfile
+runtime.txt
+data_lama.json

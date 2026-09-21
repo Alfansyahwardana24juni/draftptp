@@ -1,0 +1,157 @@
+{% load static %}<!DOCTYPE html>
+<html lang="id" data-theme="">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{% block title %}VELLOSCRIPT{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'fonts/google-fonts.css' %}">
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0"
+      crossorigin="anonymous">
+<script>
+/* Terapkan tema sebelum render supaya tidak ada kedipan warna.
+   localStorage bisa gagal (mode privat / cookie diblokir), jadi dibungkus try. */
+(function () {
+  try {
+    var t = localStorage.getItem('vs-theme');
+    if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+{% block head %}{% endblock %}
+</head>
+<body>
+
+{% block shell %}
+<header class="topbar">
+  <a href="{% url 'draft_pt_perorangan' %}" class="brand">
+    <span class="brand-mark"><i class="fa-solid fa-feather-pointed"></i></span>
+    <span class="brand-text">VELLOSCRIPT</span>
+  </a>
+
+  <nav class="topbar-nav">
+    <a href="{% url 'draft_pt_perorangan' %}" class="{% block nav_draft %}{% endblock %}">Buat Draft</a>
+    <a href="{% url 'riwayat' %}" class="{% block nav_riwayat %}{% endblock %}">Riwayat</a>
+  </nav>
+
+  <div class="topbar-right">
+    <button type="button" class="icon-btn" id="theme-toggle" title="Ganti tema terang / gelap" aria-label="Ganti tema">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+    <div class="user-chip">
+      <span class="user-name">{{ request.user.username }}</span>
+      <span class="avatar">{{ request.user.username|first }}</span>
+    </div>
+    <button type="button" class="icon-btn" onclick="VS.modal('modal-logout', true)" title="Keluar" aria-label="Keluar">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i>
+    </button>
+  </div>
+</header>
+{% endblock %}
+
+{% block body %}{% endblock %}
+
+{% block logout_modal %}
+<div class="modal" id="modal-logout">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-head">
+      <span class="card-ico" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-border);">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </span>
+      <h3>Keluar dari sistem?</h3>
+    </div>
+    <div class="modal-body">Anda perlu masuk kembali untuk mengakses halaman ini.</div>
+    <div class="modal-foot">
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-secondary" onclick="VS.modal('modal-logout', false)">Batal</button>
+      <a href="{% url 'logout' %}" class="btn btn-danger">Ya, keluar</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+<div class="toasts" id="toasts"></div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha384-1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs"
+        crossorigin="anonymous"></script>
+<script>
+/* ===== Utilitas bersama ===== */
+window.VS = (function () {
+  var root = document.documentElement;
+
+  function currentTheme() {
+    var set = root.getAttribute('data-theme');
+    if (set === 'dark' || set === 'light') return set;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function syncThemeIcon() {
+    var dark = currentTheme() === 'dark';
+    var i = document.querySelector('#theme-toggle i');
+    if (i) i.className = dark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  }
+
+  function toggleTheme() {
+    var next = currentTheme() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('vs-theme', next); } catch (e) {}
+    syncThemeIcon();
+  }
+
+  /* Tampilkan pesan tanpa alert() yang memblokir halaman */
+  function toast(msg, kind) {
+    var wrap = document.getElementById('toasts');
+    if (!wrap) return;
+    var ico = kind === 'err' ? 'fa-circle-exclamation'
+            : kind === 'ok'  ? 'fa-circle-check'
+            : 'fa-circle-info';
+    var el = document.createElement('div');
+    el.className = 'toast' + (kind ? ' ' + kind : '');
+    el.innerHTML = '<i class="fa-solid ' + ico + '"></i><span></span>';
+    el.querySelector('span').textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(function () {
+      el.style.transition = 'opacity .25s';
+      el.style.opacity = '0';
+      setTimeout(function () { el.remove(); }, 250);
+    }, kind === 'err' ? 6000 : 3500);
+  }
+
+  function modal(id, show) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('show', !!show);
+    document.body.style.overflow = show ? 'hidden' : '';
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    syncThemeIcon();
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.addEventListener('click', toggleTheme);
+
+    /* Klik latar atau Escape menutup modal */
+    document.querySelectorAll('.modal').forEach(function (m) {
+      m.addEventListener('click', function (e) {
+        if (e.target === m) modal(m.id, false);
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      document.querySelectorAll('.modal.show').forEach(function (m) { modal(m.id, false); });
+    });
+  });
+
+  /* Ikut berubah kalau tema sistem berubah dan pengguna belum memilih manual */
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+    if (!root.getAttribute('data-theme')) syncThemeIcon();
+  });
+
+  return { toast: toast, modal: modal, toggleTheme: toggleTheme };
+})();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

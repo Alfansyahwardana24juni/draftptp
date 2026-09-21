@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.12",
+        "maxLambdaSize": "50mb",
+        "includeFiles": [
+          "core/**",
+          "velloscript/**",
+          "templates/**",
+          "template_word/**",
+          "staticfiles/**",
+          "kbli.db",
+          "manage.py"
+        ]
+      }
+    }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "api/index.py" }
+  ]
+}
