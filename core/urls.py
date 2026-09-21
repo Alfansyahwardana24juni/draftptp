@@ -7,4 +7,5 @@ urlpatterns = [
     path('riwayat/', views.riwayat, name='riwayat'),
     path('cari-kbli/', views.cari_kbli, name='cari_kbli'),
     path('generate/', views.generate, name='generate'),
+    path('generate-pdf/', views.generate_pdf, name='generate_pdf'),
 ]

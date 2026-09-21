@@ -137,7 +137,9 @@ function render() {
         + '<a href="{% url "form" %}?id=' + encodeURIComponent(d.id) + '" class="btn btn-secondary btn-sm">'
           + '<i class="fa-solid fa-pen"></i> Buka</a>'
         + '<button type="button" class="btn btn-secondary btn-sm" data-unduh="' + esc(d.id) + '">'
-          + '<i class="fa-solid fa-file-word"></i> Unduh</button>'
+          + '<i class="fa-solid fa-file-word"></i> .docx</button>'
+        + '<button type="button" class="btn btn-secondary btn-sm" data-unduh-pdf="' + esc(d.id) + '">'
+          + '<i class="fa-solid fa-file-pdf"></i> PDF</button>'
         + '<button type="button" class="btn btn-danger-soft btn-sm" data-hapus="' + esc(d.id) + '">'
           + '<i class="fa-solid fa-trash"></i> Hapus</button>'
       + '</div></td></tr>';
@@ -146,14 +148,14 @@ function render() {
   $('#isi').html(html + '</tbody></table>');
 }
 
-/* ---------- Unduh: kirim data draft ke server untuk dirender jadi .docx ---------- */
-$('#isi').on('click', '[data-unduh]', function () {
-  const d = VS.store.get($(this).data('unduh'));
+/* ---------- Unduh: kirim data draft ke server untuk dirender ---------- */
+function unduh(id, action) {
+  const d = VS.store.get(id);
   if (!d) { VS.toast('Draft tidak ditemukan.', 'err'); return; }
 
   const form = document.createElement('form');
   form.method = 'POST';
-  form.action = '{% url "generate" %}';
+  form.action = action;
   form.style.display = 'none';
 
   function tambah(nama, nilai) {
@@ -169,6 +171,13 @@ $('#isi').on('click', '[data-unduh]', function () {
   form.submit();
   setTimeout(function () { form.remove(); }, 1000);
   VS.toast('Dokumen sedang dibuat…', 'ok');
+}
+
+$('#isi').on('click', '[data-unduh]', function () {
+  unduh($(this).data('unduh'), '{% url "generate" %}');
+});
+$('#isi').on('click', '[data-unduh-pdf]', function () {
+  unduh($(this).data('unduh-pdf'), '{% url "generate_pdf" %}');
 });
 
 /* ---------- Hapus ---------- */

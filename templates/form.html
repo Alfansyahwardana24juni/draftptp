@@ -230,6 +230,9 @@
       <button type="button" class="btn btn-secondary" id="btn-simpan">
         <i class="fa-solid fa-floppy-disk"></i> Simpan draft
       </button>
+      <button type="submit" class="btn btn-secondary" formaction="{% url 'generate_pdf' %}">
+        <i class="fa-solid fa-file-pdf"></i> Generate PDF
+      </button>
       <button type="submit" class="btn btn-primary">
         <i class="fa-solid fa-file-word"></i> Generate .docx
       </button>

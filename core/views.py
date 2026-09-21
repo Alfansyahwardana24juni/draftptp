@@ -38,11 +38,14 @@ def buka_kbli():
 
 
 def format_rupiah(n):
+    """Angka saja dengan pemisah titik — template Word sudah memuat "Rp." sendiri."""
     try:
         n = int(n)
     except (TypeError, ValueError):
         n = 0
-    return 'Rp' + f'{n:,}'.replace(',', '.')
+    if not n:
+        return '0'
+    return f'{n:,}'.replace(',', '.')
 
 
 def ambil(request, nama, bawaan=''):
@@ -56,10 +59,14 @@ def rangkai_nama(nama, gelar_depan, gelar_belakang):
         inti = inti.replace(sebutan, '')
     inti = inti.strip()
 
+    # Pengguna sering sudah mengetik titik ("Drs."), jangan ditambahi lagi.
+    if gelar_depan and not gelar_depan.endswith('.'):
+        gelar_depan += '.'
+
     if gelar_depan and gelar_belakang:
-        return f'{gelar_depan}. {inti}, {gelar_belakang}'
+        return f'{gelar_depan} {inti}, {gelar_belakang}'
     if gelar_depan:
-        return f'{gelar_depan}. {inti}'
+        return f'{gelar_depan} {inti}'
     if gelar_belakang:
         return f'{inti}, {gelar_belakang}'
     return inti
@@ -160,9 +167,9 @@ def build_context(request):
     }
 
 
-def nama_berkas(nama_pt):
+def nama_berkas(nama_pt, ekstensi):
     bersih = re.sub(r'[\\/:*?"<>|]', '-', nama_pt or 'DRAFT').strip() or 'DRAFT'
-    return f'DRAFT_{bersih}.docx'
+    return f'DRAFT_{bersih}.{ekstensi}'
 
 
 # ================= VIEWS =================
@@ -192,23 +199,42 @@ def cari_kbli(request):
     return JsonResponse(data, safe=False)
 
 
-@require_POST
-def generate(request):
-    """Terima data form, balas dokumen .docx. Tidak ada yang disimpan di server."""
+def render_docx(request):
+    """Render template Word dengan data form, balas byte .docx."""
     context = build_context(request)
-
     template_path = os.path.join(settings.BASE_DIR, 'template_word', TEMPLATE_PT_PERORANGAN)
     doc = DocxTemplate(template_path)
     doc.render(context)
 
     buffer = io.BytesIO()
     doc.save(buffer)
-    buffer.seek(0)
+    return context, buffer.getvalue()
 
-    response = FileResponse(
-        buffer,
-        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    )
-    response['Content-Disposition'] = f'attachment; filename="{nama_berkas(context["NAMA_PT"])}"'
-    response['Content-Length'] = buffer.getbuffer().nbytes
+
+def kirim_berkas(isi, nama, tipe):
+    response = FileResponse(io.BytesIO(isi), content_type=tipe)
+    response['Content-Disposition'] = f'attachment; filename="{nama}"'
+    response['Content-Length'] = len(isi)
     return response
+
+
+@require_POST
+def generate(request):
+    """Terima data form, balas dokumen .docx. Tidak ada yang disimpan di server."""
+    context, isi = render_docx(request)
+    return kirim_berkas(
+        isi,
+        nama_berkas(context['NAMA_PT'], 'docx'),
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    )
+
+
+@require_POST
+def generate_pdf(request):
+    """Sama seperti generate(), tapi dokumennya diubah dulu menjadi PDF."""
+    from .pdf import docx_ke_pdf
+
+    context, isi = render_docx(request)
+    return kirim_berkas(isi=docx_ke_pdf(isi),
+                        nama=nama_berkas(context['NAMA_PT'], 'pdf'),
+                        tipe='application/pdf')
