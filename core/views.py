@@ -204,7 +204,9 @@ def render_docx(request):
     context = build_context(request)
     template_path = os.path.join(settings.BASE_DIR, 'template_word', TEMPLATE_PT_PERORANGAN)
     doc = DocxTemplate(template_path)
-    doc.render(context)
+    # autoescape wajib: tanpa ini karakter & < > dari isian pengguna
+    # disuntikkan mentah ke XML dan merusak struktur dokumen.
+    doc.render(context, autoescape=True)
 
     buffer = io.BytesIO()
     doc.save(buffer)

@@ -9,12 +9,18 @@ Draft **disimpan di browser** masing-masing pengguna (`localStorage`).
 Server tidak menyimpan apa pun — tugasnya hanya dua:
 
 1. mencari kode KBLI dari `kbli.db` (dibaca saja), dan
-2. merender `.docx` dari template Word memakai `docxtpl`.
+2. merender `.docx` dari template Word memakai `docxtpl`, dan mengubahnya
+   menjadi PDF bila diminta.
 
 Rendering dokumen sengaja tetap di server: penanda seperti `{{ JLN_PT }}`
 di dalam file Word terpecah ke beberapa bagian XML, dan `docxtpl`
 menanganinya dengan benar. Implementasi di sisi browser rawan menghasilkan
 dokumen rusak.
+
+PDF disusun ulang dari dokumen .docx yang baru dirender (`core/pdf.py`),
+lengkap dengan kop surat dari header Word. Ini penyusunan ulang, bukan
+konversi piksel-per-piksel — konversi identik membutuhkan LibreOffice atau
+Microsoft Word, yang tidak tersedia di serverless.
 
 ### Konsekuensi yang perlu diketahui
 
@@ -55,6 +61,7 @@ karena memang tidak ada database.
 | `/riwayat/` | Daftar draft tersimpan + Ekspor / Impor cadangan |
 | `/cari-kbli/?q=` | Pencarian KBLI (JSON) |
 | `/generate/` | POST data form → balas file `.docx` |
+| `/generate-pdf/` | POST data form → balas file `.pdf` |
 
 ## Kalau mengubah file di static/
 
