@@ -32,3 +32,6 @@ data_clip.json
 # Vercel tidak menjalankan collectstatic, jadi hasilnya harus ikut di repo
 # supaya WhiteNoise bisa melayaninya. Setelah mengubah static/, jalankan:
 #   python manage.py collectstatic --noinput --clear
+
+# Ekspor draft lama (berisi NIK, NPWP, alamat) — jangan masuk repo
+draft-lama-untuk-impor.json

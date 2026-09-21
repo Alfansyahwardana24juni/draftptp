@@ -1,9 +1,7 @@
 Django==5.2.17
-python-dotenv==1.2.3
-dj-database-url==3.1.2
 whitenoise==6.12.0
 docxtpl==0.20.2
-psycopg[binary]==3.3.6
+python-dotenv==1.2.3
 # Image serverless sering tanpa database timezone sistem;
-# TIME_ZONE='Asia/Makassar' butuh ini.
+# TIME_ZONE='Asia/Makassar' membutuhkannya.
 tzdata==2026.4

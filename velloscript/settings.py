@@ -19,22 +19,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # .env hanya dipakai sebagai fallback untuk pengembangan lokal.
 load_dotenv(BASE_DIR / '.env', override=False)
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-bwek-dk69#$7kev12#1s^g+27h^a_cl&j98je0ve0u-2)vl*sx')
+# Dipakai hanya untuk menandatangani token CSRF. Tidak ada akun, sesi, atau
+# data pengguna di server, jadi nilai bawaan di repo sudah memadai dan
+# aplikasi bisa dideploy tanpa environment variable apa pun.
+SECRET_KEY = os.environ.get('SECRET_KEY', 'velloscript-ptp-csrf-key-9f2c41ab7de05836')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # Host: default mengizinkan domain Vercel + localhost. Bisa ditimpa lewat env ALLOWED_HOSTS.
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get(
-    'ALLOWED_HOSTS',
-    '.vercel.app,localhost,127.0.0.1'
-).split(',') if h.strip()]
-
-# Saat pengembangan lokal, izinkan semua host (termasuk 'testserver' milik test client).
-if DEBUG:
-    ALLOWED_HOSTS = ['*']
+# Tidak ada akun maupun data pengguna di server, jadi tidak ada yang perlu
+# dilindungi lewat pembatasan Host. Dibiarkan terbuka supaya deploy ke domain
+# mana pun langsung jalan tanpa setting.
+ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = [
     'https://*.vercel.app',
-    'https://*.pythonanywhere.com',
     'http://127.0.0.1:8000',
     'http://localhost:8000',
     'http://127.0.0.1:8001',
@@ -50,10 +48,8 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
+    # auth, contenttypes, sessions, dan messages dihapus: semuanya butuh
+    # database, sementara aplikasi ini tidak memakai database sama sekali.
     'django.contrib.staticfiles',
     'core',
 ]
@@ -61,11 +57,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    # CSRF tetap aktif; token-nya berbasis cookie, tidak butuh session.
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'velloscript.middleware.SecurityHeadersMiddleware',
 ]
@@ -80,8 +74,6 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -90,53 +82,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'velloscript.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-import dj_database_url
-
-# Serverless: default conn_max_age=0 supaya tiap invocation tidak menahan koneksi
-# (kalau pakai pooler seperti Neon/Supabase, biarkan 0).
-DATABASES = {
-    'default': dj_database_url.config(
-        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
-        conn_max_age=int(os.environ.get('DB_CONN_MAX_AGE', '0')),
-        ssl_require=os.environ.get('DB_SSL_REQUIRE', 'False') == 'True',
-    )
-}
-
-# Di serverless (Vercel) filesystem-nya read-only dan ephemeral, jadi SQLite
-# tidak bisa dipakai. Gagal dengan pesan jelas daripada error membingungkan
-# saat request pertama. Mode DEBUG dan SQLite lokal yang ada tetap dibiarkan.
-if not DEBUG and not os.environ.get('DATABASE_URL') and not (BASE_DIR / 'db.sqlite3').exists():
-    from django.core.exceptions import ImproperlyConfigured
-    raise ImproperlyConfigured(
-        'DATABASE_URL belum diset. Di produksi (DEBUG=False) aplikasi ini butuh '
-        'Postgres — SQLite tidak bisa dipakai di serverless. '
-        'Set DATABASE_URL di Environment Variables, lihat DEPLOY_VERCEL.md.'
-    )
-
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {
-            'min_length': 8,
-        }
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
+# ==============================================================================
+# TANPA DATABASE
+# ==============================================================================
+# Draft disimpan di browser pengguna (localStorage), bukan di server.
+# DATABASES sengaja kosong supaya tidak ada satu pun bagian yang diam-diam
+# mencoba menulis ke disk — di serverless filesystem-nya read-only.
+DATABASES = {}
 
 
 # Internationalization
@@ -175,22 +127,16 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Session Configuration
-SESSION_COOKIE_AGE = 518400  # 6 days in seconds
-SESSION_SAVE_EVERY_REQUEST = True  # Perpanjang session setiap request (keep-alive saat aktif)
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Biarkan persisten selama 6 hari (tidak hilang saat browser ditutup)
-
 # ==============================================================================
 # PENGATURAN KEAMANAN (MITIGASI OWASP ZAP)
 # ==============================================================================
 
 # 1. Cookie Security (Mencegah XSS membaca sesi)
-SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 
 # 2. Cookie Secure (aktif di produksi; set COOKIE_SECURE=False untuk dev di http://localhost)
-COOKIE_SECURE = os.environ.get('COOKIE_SECURE', 'True') == 'True'
-SESSION_COOKIE_SECURE = COOKIE_SECURE
-CSRF_COOKIE_SECURE = COOKIE_SECURE
+# Hanya cookie CSRF yang tersisa. Di lokal (DEBUG) harus non-secure supaya
+# http://localhost tetap bisa mengirim form; di produksi selalu secure.
+CSRF_COOKIE_SECURE = not DEBUG
 
 # 3. Pengaturan lainnya diurus oleh custom middleware di velloscript/middleware.py

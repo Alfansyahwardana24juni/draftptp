@@ -1,7 +1,5 @@
 {% extends 'base.html' %}
-{% load static core_filters %}
-
-{% block title %}Riwayat Draft · VELLOSCRIPT{% endblock %}
+{% block title %}Draft Tersimpan · VELLOSCRIPT{% endblock %}
 {% block nav_riwayat %}active{% endblock %}
 
 {% block body %}
@@ -9,211 +7,37 @@
 
   <div class="page-head">
     <div class="page-head-main">
-      <div class="eyebrow">PT Perorangan</div>
-      <h1 class="title">Riwayat Draft</h1>
-      <p class="subtitle">Klik nama pemilik untuk melihat data lengkapnya.</p>
+      <div class="eyebrow">Tersimpan di browser ini</div>
+      <h1 class="title">Draft Tersimpan</h1>
+      <p class="subtitle">Draft hanya ada di perangkat ini. Cadangkan lewat Ekspor agar tidak hilang.</p>
     </div>
-    <a href="{% url 'draft_pt_perorangan' %}" class="btn btn-primary">
-      <i class="fa-solid fa-plus"></i> Buat draft baru
-    </a>
+    <a href="{% url 'form' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Buat draft baru</a>
+  </div>
+
+  <div class="callout" id="peringatan" style="display:none;">
+    <strong>Browser ini memblokir penyimpanan lokal.</strong>
+    Draft tidak bisa disimpan — biasanya karena mode penyamaran atau cookie/site data diblokir.
+    Formulir tetap bisa dipakai untuk membuat dokumen.
   </div>
 
   <div class="table-wrap">
     <div class="toolbar">
       <h2>Daftar draft</h2>
-      <span class="badge badge-neutral">{{ data|length }} tersimpan</span>
+      <span class="badge badge-neutral" id="jumlah">0 tersimpan</span>
       <div class="search">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="search-input" placeholder="Cari nama PT…" autocomplete="off">
+        <input type="text" id="cari" placeholder="Cari nama PT…" autocomplete="off">
       </div>
-    </div>
-
-    {% if data %}
-    <table id="tabel-riwayat">
-      <thead>
-        <tr>
-          <th>No</th>
-          <th>Nama PT</th>
-          <th>Modal</th>
-          <th>Pemilik</th>
-          <th>KBLI</th>
-          <th>Status</th>
-          <th>Diubah</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in data %}
-        <tr>
-          <td class="col-no" data-label="No">{{ forloop.counter }}</td>
-
-          <td data-label="Nama PT">
-            <div class="cell-title nama-pt">{{ item.akta.nama_pt }}</div>
-            <div class="cell-sub">
-              <i class="fa-solid fa-location-dot"></i>
-              {% if item.akta.tipe_kab_pt %}{{ item.akta.tipe_kab_pt }} {% endif %}{{ item.akta.kota_pt|default:'—' }}
-            </div>
-          </td>
-
-          <td data-label="Modal">
-            {% if item.akta.modal_dasar %}
-              <div class="num" style="font-weight:600;color:var(--text);">Rp{{ item.modal_dasar_fmt }}</div>
-              <div class="cell-sub num">{{ item.akta.total_lembar }} lembar</div>
-            {% else %}
-              <span style="color:var(--text-3);">—</span>
-            {% endif %}
-          </td>
-
-          <td data-label="Pemilik">
-            {% for p in item.pengurus %}
-            <span class="chip" data-pengurus='{{ p|tojson }}' data-lembar="{{ item.akta.total_lembar }}"
-                  onclick="previewPengurus(this)">
-              <i class="fa-solid fa-user" style="font-size:10px;"></i>
-              {{ p.nama }}<span class="muted">· {{ p.jabatan }}</span>
-            </span>
-            {% empty %}
-            <span style="color:var(--text-3);">—</span>
-            {% endfor %}
-          </td>
-
-          <td data-label="KBLI">
-            {% if item.kbli_rows %}
-              <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                {% for baris in item.kbli_rows %}{% for kode in baris %}
-                <span class="code-pill">{{ kode }}</span>
-                {% endfor %}{% endfor %}
-              </div>
-            {% else %}
-              <span style="color:var(--text-3);">—</span>
-            {% endif %}
-          </td>
-
-          <td data-label="Status">
-            {% if item.lengkap %}
-              <span class="badge badge-ok"><i class="fa-solid fa-circle-check"></i> Lengkap</span>
-            {% else %}
-              <span class="badge badge-warn"><i class="fa-solid fa-clock"></i> Draft</span>
-            {% endif %}
-
-            {% if item.notes %}
-            <div>
-              <span class="note-toggle" onclick="toggleNote(this)">
-                <i class="fa-solid fa-triangle-exclamation"></i> {{ item.notes|length }} catatan otomatis
-              </span>
-              <div class="note-box" style="display:none;">
-                <ul>{% for note in item.notes %}<li>{{ note }}</li>{% endfor %}</ul>
-              </div>
-            </div>
-            {% endif %}
-
-            {% for c in item.catatan %}
-            <div class="note-item" id="cat-{{ c.id }}">
-              <input type="checkbox" class="cat-check" data-id="{{ c.id }}" title="Tandai selesai">
-              <span>{{ c.isi }}</span>
-            </div>
-            {% endfor %}
-
-            <div>
-              <span class="note-toggle" style="color:var(--accent);" onclick="toggleTambahCatatan(this)">
-                <i class="fa-solid fa-plus"></i> Tambah catatan
-              </span>
-              <div class="tambah-catatan-form" style="display:none;">
-                <form action="{% url 'catatan_tambah' %}" method="POST" class="note-add">
-                  {% csrf_token %}
-                  <input type="hidden" name="akta_id" value="{{ item.akta.id }}">
-                  <input type="text" name="isi" placeholder="Tulis catatan…" required>
-                  <button type="submit" class="btn btn-secondary btn-sm">Simpan</button>
-                </form>
-              </div>
-            </div>
-          </td>
-
-          <td data-label="Diubah">
-            <div class="num">{{ item.akta.updated_at|date:"d M Y"|default:"—" }}</div>
-            <div class="cell-sub num">{{ item.akta.updated_at|date:"H:i" }}</div>
-          </td>
-
-          <td data-label="Aksi">
-            <div class="actions">
-              <a href="{% url 'download' item.akta.id %}" class="btn btn-secondary btn-sm">
-                <i class="fa-solid fa-file-word"></i> Unduh
-              </a>
-              <a href="{% url 'edit' item.akta.id %}" class="btn btn-secondary btn-sm">
-                <i class="fa-solid fa-pen"></i> Edit
-              </a>
-              <button type="button" class="btn btn-danger-soft btn-sm"
-                      onclick="openDeleteModal('{{ item.akta.id }}', '{{ item.akta.nama_pt|escapejs }}')">
-                <i class="fa-solid fa-trash"></i> Hapus
-              </button>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    <div class="pagination">
-      <span class="info" id="pg-info">Memuat…</span>
-      <span class="grow"></span>
-      <div class="pg-size">
-        <label for="pg-size">Baris</label>
-        <select id="pg-size">
-          <option value="10" selected>10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="9999">Semua</option>
-        </select>
-      </div>
-      <div class="pg-btns" id="pg-btns"></div>
-    </div>
-
-    {% else %}
-    <div class="empty">
-      <i class="fa-regular fa-folder-open"></i>
-      <p>Belum ada draft tersimpan.<br>Klik <strong>Buat draft baru</strong> untuk mulai.</p>
-    </div>
-    {% endif %}
-  </div>
-</div>
-
-<!-- ============ MODAL PREVIEW PEMILIK ============ -->
-<div class="modal" id="modal-preview">
-  <div class="modal-box">
-    <div class="modal-head">
-      <span class="pv-avatar" id="pv-avatar">?</span>
-      <div style="flex:1;min-width:0;">
-        <h3 id="pv-nama" style="font-size:15px;">—</h3>
-        <div style="font-size:12.5px;color:var(--text-2);">
-          <span id="pv-jabatan">—</span> ·
-          <span id="pv-persen">0%</span> ·
-          <span id="pv-lembar">0 lembar saham</span>
-        </div>
-      </div>
-      <button type="button" class="icon-btn" onclick="VS.modal('modal-preview', false)" aria-label="Tutup">
-        <i class="fa-solid fa-xmark"></i>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-ekspor">
+        <i class="fa-solid fa-download"></i> Ekspor
       </button>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('file-impor').click()">
+        <i class="fa-solid fa-upload"></i> Impor
+      </button>
+      <input type="file" id="file-impor" accept="application/json,.json" style="display:none;">
     </div>
-    <div class="modal-body">
-      <div class="section-label"><i class="fa-solid fa-id-card"></i> Identitas</div>
-      <div class="pv-grid" style="margin-bottom:18px;">
-        <div class="pv-item"><span class="pv-label">Tempat lahir</span><span class="pv-value" id="pv-tpl">—</span></div>
-        <div class="pv-item"><span class="pv-label">Tanggal lahir</span><span class="pv-value" id="pv-tgl">—</span></div>
-        <div class="pv-item"><span class="pv-label">NIK</span><span class="pv-value num" id="pv-nik">—</span></div>
-        <div class="pv-item"><span class="pv-label">Pekerjaan</span><span class="pv-value" id="pv-kerja">—</span></div>
-      </div>
-      <div class="section-label"><i class="fa-solid fa-location-dot"></i> Alamat</div>
-      <div class="pv-grid">
-        <div class="pv-item full"><span class="pv-label">Jalan / dusun</span><span class="pv-value" id="pv-jalan">—</span></div>
-        <div class="pv-item"><span class="pv-label">RT / RW</span><span class="pv-value" id="pv-rtrw">—</span></div>
-        <div class="pv-item"><span class="pv-label">Desa / kelurahan</span><span class="pv-value" id="pv-desa">—</span></div>
-        <div class="pv-item"><span class="pv-label">Kecamatan</span><span class="pv-value" id="pv-kec">—</span></div>
-        <div class="pv-item"><span class="pv-label">Kabupaten / kota</span><span class="pv-value" id="pv-kab">—</span></div>
-        <div class="pv-item full"><span class="pv-label">Provinsi</span><span class="pv-value" id="pv-prov">—</span></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button type="button" class="btn btn-secondary btn-block" onclick="VS.modal('modal-preview', false)">Tutup</button>
-    </div>
+
+    <div id="isi"></div>
   </div>
 </div>
 
@@ -227,17 +51,13 @@
       <h3>Hapus draft?</h3>
     </div>
     <div class="modal-body">
-      <div class="callout danger">
-        <strong>Tidak bisa dibatalkan.</strong> Draft dan data pemiliknya akan hilang permanen.
-      </div>
-      <div id="deleteNamaPt"></div>
+      <div class="callout danger"><strong>Tidak bisa dibatalkan.</strong> Draft ini akan hilang dari browser.</div>
+      <div id="hapus-nama"></div>
     </div>
     <div class="modal-foot">
       <span class="spacer"></span>
-      <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Batal</button>
-      <button type="button" class="btn btn-danger" onclick="confirmDeleteAction()">
-        <i class="fa-solid fa-trash"></i> Ya, hapus
-      </button>
+      <button type="button" class="btn btn-secondary" onclick="VS.modal('modal-hapus', false)">Batal</button>
+      <button type="button" class="btn btn-danger" id="btn-hapus-ya"><i class="fa-solid fa-trash"></i> Ya, hapus</button>
     </div>
   </div>
 </div>
@@ -245,159 +65,166 @@
 
 {% block scripts %}
 <script>
-/* ============================================================
-   Pagination sisi klien
-   ============================================================ */
-let pgCurrent = 1;
-let pgSize = 10;
+let idHapus = null;
 
-function renderPage() {
-  const rows = $('#tabel-riwayat tbody tr.pg-row');
-  const total = rows.length;
-  const pages = Math.ceil(total / pgSize) || 1;
-  if (pgCurrent > pages) pgCurrent = pages;
+function esc(s) { return $('<div>').text(s == null ? '' : s).html(); }
 
-  rows.hide();
-  rows.slice((pgCurrent - 1) * pgSize, pgCurrent * pgSize).show();
-
-  const from = total === 0 ? 0 : (pgCurrent - 1) * pgSize + 1;
-  const to = Math.min(pgCurrent * pgSize, total);
-  $('#pg-info').text(total === 0
-    ? 'Tidak ada data yang cocok'
-    : 'Menampilkan ' + from + '–' + to + ' dari ' + total + ' data');
-
-  let btns = '<button class="pg-btn" onclick="goPage(' + (pgCurrent - 1) + ')"' + (pgCurrent === 1 ? ' disabled' : '') + '>‹</button>';
-  const start = Math.max(1, pgCurrent - 2);
-  const end = Math.min(pages, pgCurrent + 2);
-  if (start > 1) {
-    btns += '<button class="pg-btn" onclick="goPage(1)">1</button>';
-    if (start > 2) btns += '<span style="padding:0 4px;color:var(--text-3);">…</span>';
-  }
-  for (let i = start; i <= end; i++) {
-    btns += '<button class="pg-btn' + (i === pgCurrent ? ' active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>';
-  }
-  if (end < pages) {
-    if (end < pages - 1) btns += '<span style="padding:0 4px;color:var(--text-3);">…</span>';
-    btns += '<button class="pg-btn" onclick="goPage(' + pages + ')">' + pages + '</button>';
-  }
-  btns += '<button class="pg-btn" onclick="goPage(' + (pgCurrent + 1) + ')"' + (pgCurrent === pages ? ' disabled' : '') + '>›</button>';
-  $('#pg-btns').html(btns);
+function tanggal(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return '—';
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+       + ' · ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
 
-function goPage(n) {
-  const pages = Math.ceil($('#tabel-riwayat tbody tr.pg-row').length / pgSize) || 1;
-  pgCurrent = Math.max(1, Math.min(n, pages));
-  renderPage();
+function rupiah(v) {
+  const n = parseInt(v, 10) || 0;
+  return n ? 'Rp' + n.toLocaleString('id-ID') : '—';
 }
 
-$('#tabel-riwayat tbody tr').addClass('pg-row');
-renderPage();
+function lengkap(d) {
+  const f = d.fields || {};
+  return !!(f.nama_pt && f.nama && (d.kbli || []).length);
+}
 
-$('#pg-size').on('change', function () {
-  pgSize = parseInt($(this).val(), 10);
-  pgCurrent = 1;
-  renderPage();
-});
-
-/* Pencarian: tandai baris yang cocok lalu render ulang */
-$('#search-input').on('input', function () {
-  const q = $(this).val().toLowerCase();
-  $('#tabel-riwayat tbody tr').each(function () {
-    const match = $(this).find('.nama-pt').text().toLowerCase().includes(q);
-    $(this).toggleClass('pg-row', match);
-    if (!match) $(this).hide();
+function render() {
+  const q = ($('#cari').val() || '').toLowerCase();
+  const semua = VS.store.all();
+  const list = semua.filter(function (d) {
+    return (d.nama_pt || '').toLowerCase().includes(q);
   });
-  pgCurrent = 1;
-  renderPage();
-});
 
-/* ============================================================
-   Catatan
-   ============================================================ */
-function toggleNote(el) { $(el).next('.note-box').slideToggle(180); }
-function toggleTambahCatatan(el) { $(el).next('.tambah-catatan-form').slideToggle(180); }
+  $('#jumlah').text(semua.length + ' tersimpan');
+  VS.syncCount();
+  $('#peringatan').toggle(!VS.store.tersedia());
 
-$(document).on('change', '.cat-check', function () {
-  const id = $(this).data('id');
-  const row = $(this).closest('.note-item');
-  row.addClass('done');
-  setTimeout(function () {
-    $.ajax({
-      url: '{% url "catatan_selesai" 0 %}'.replace('/0/', '/' + id + '/'),
-      type: 'POST',
-      headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-      success: function () { row.fadeOut(300, function () { $(this).remove(); }); },
-      error: function () {
-        row.removeClass('done');
-        VS.toast('Gagal menghapus catatan, coba lagi.', 'err');
-      }
-    });
-  }, 450);
-});
+  if (!semua.length) {
+    $('#isi').html(
+      '<div class="empty"><i class="fa-regular fa-folder-open"></i>' +
+      '<p>Belum ada draft di browser ini.<br>Klik <strong>Buat draft baru</strong> untuk mulai,' +
+      ' atau <strong>Impor</strong> kalau punya berkas cadangan.</p></div>');
+    return;
+  }
+  if (!list.length) {
+    $('#isi').html('<div class="empty"><i class="fa-solid fa-magnifying-glass"></i><p>Tidak ada yang cocok dengan pencarian.</p></div>');
+    return;
+  }
 
-/* ============================================================
-   Preview pemilik
-   ============================================================ */
-function pvVal(v) {
-  return v ? $('<span class="pv-value"></span>').text(v) : $('<span class="pv-value empty">Belum diisi</span>');
+  let html = '<table><thead><tr><th>No</th><th>Nama PT</th><th>Pemilik</th><th>Modal</th>'
+           + '<th>KBLI</th><th>Status</th><th>Diubah</th><th>Aksi</th></tr></thead><tbody>';
+
+  list.forEach(function (d, i) {
+    const f = d.fields || {};
+    const kbli = d.kbli || [];
+    const ok = lengkap(d);
+    html += '<tr>'
+      + '<td class="col-no" data-label="No">' + (i + 1) + '</td>'
+      + '<td data-label="Nama PT"><div class="cell-title">' + esc(d.nama_pt || '(tanpa nama)') + '</div>'
+        + '<div class="cell-sub"><i class="fa-solid fa-location-dot"></i> '
+        + esc(((f.tipe_kab_pt || '') + ' ' + (f.kota_pt || '')).trim() || '—') + '</div></td>'
+      + '<td data-label="Pemilik">' + (f.nama ? esc(f.nama) : '<span style="color:var(--text-3);">—</span>') + '</td>'
+      + '<td data-label="Modal" class="num">' + rupiah(f.modal_dasar) + '</td>'
+      + '<td data-label="KBLI">' + (kbli.length
+          ? '<div style="display:flex;flex-wrap:wrap;gap:4px;">'
+            + kbli.map(function (k) { return '<span class="code-pill">' + esc(k) + '</span>'; }).join('')
+            + '</div>'
+          : '<span style="color:var(--text-3);">—</span>') + '</td>'
+      + '<td data-label="Status">' + (ok
+          ? '<span class="badge badge-ok"><i class="fa-solid fa-circle-check"></i> Lengkap</span>'
+          : '<span class="badge badge-warn"><i class="fa-solid fa-clock"></i> Belum lengkap</span>') + '</td>'
+      + '<td data-label="Diubah"><div class="num">' + esc(tanggal(d.updated_at)) + '</div></td>'
+      + '<td data-label="Aksi"><div class="actions">'
+        + '<a href="{% url "form" %}?id=' + encodeURIComponent(d.id) + '" class="btn btn-secondary btn-sm">'
+          + '<i class="fa-solid fa-pen"></i> Buka</a>'
+        + '<button type="button" class="btn btn-secondary btn-sm" data-unduh="' + esc(d.id) + '">'
+          + '<i class="fa-solid fa-file-word"></i> Unduh</button>'
+        + '<button type="button" class="btn btn-danger-soft btn-sm" data-hapus="' + esc(d.id) + '">'
+          + '<i class="fa-solid fa-trash"></i> Hapus</button>'
+      + '</div></td></tr>';
+  });
+
+  $('#isi').html(html + '</tbody></table>');
 }
 
-function previewPengurus(el) {
-  const p = JSON.parse(el.getAttribute('data-pengurus'));
-  const totalLembar = parseInt(el.getAttribute('data-lembar'), 10) || 0;
-  const persen = parseFloat(p.saham_persen || 0);
-  const lembar = Math.floor((persen / 100) * totalLembar);
+/* ---------- Unduh: kirim data draft ke server untuk dirender jadi .docx ---------- */
+$('#isi').on('click', '[data-unduh]', function () {
+  const d = VS.store.get($(this).data('unduh'));
+  if (!d) { VS.toast('Draft tidak ditemukan.', 'err'); return; }
 
-  $('#pv-avatar').text((p.nama || '?').charAt(0).toUpperCase());
-  $('#pv-nama').text(((p.sebutan || '') + ' ' + (p.nama || '—')).trim());
-  $('#pv-jabatan').text(p.jabatan || '—');
-  $('#pv-persen').text(persen + '%');
-  $('#pv-lembar').text(lembar.toLocaleString('id-ID') + ' lembar saham');
-
-  $('#pv-tpl').replaceWith(pvVal(p.tpl).attr('id', 'pv-tpl'));
-  $('#pv-tgl').replaceWith(pvVal(p.tgl_lahir).attr('id', 'pv-tgl'));
-  $('#pv-nik').replaceWith(pvVal(p.nik).attr('id', 'pv-nik').addClass('num'));
-  $('#pv-kerja').replaceWith(pvVal(p.pekerjaan).attr('id', 'pv-kerja'));
-  $('#pv-kab').replaceWith(pvVal(p.tipe_kab && p.kab ? p.tipe_kab + ' ' + p.kab : p.kab).attr('id', 'pv-kab'));
-  $('#pv-jalan').replaceWith(pvVal(p.jalan).attr('id', 'pv-jalan'));
-  $('#pv-rtrw').replaceWith(pvVal(p.rt && p.rw ? 'RT ' + p.rt + ' / RW ' + p.rw : '').attr('id', 'pv-rtrw'));
-  $('#pv-desa').replaceWith(pvVal(p.desa).attr('id', 'pv-desa'));
-  $('#pv-kec').replaceWith(pvVal(p.kecamatan).attr('id', 'pv-kec'));
-  $('#pv-prov').replaceWith(pvVal(p.provinsi).attr('id', 'pv-prov'));
-
-  VS.modal('modal-preview', true);
-}
-
-/* ============================================================
-   Hapus draft
-   ============================================================ */
-let currentAktaId = null;
-
-function openDeleteModal(aktaId, namaPt) {
-  currentAktaId = aktaId;
-  $('#deleteNamaPt').empty()
-    .append(document.createTextNode('Draft yang akan dihapus: '))
-    .append($('<strong></strong>').text(namaPt));
-  VS.modal('modal-hapus', true);
-}
-
-function closeDeleteModal() {
-  VS.modal('modal-hapus', false);
-  currentAktaId = null;
-}
-
-function confirmDeleteAction() {
-  if (currentAktaId === null) return;
   const form = document.createElement('form');
   form.method = 'POST';
-  form.action = '{% url "hapus" 0 %}'.replace('/0/', '/' + currentAktaId + '/');
-  const csrf = document.createElement('input');
-  csrf.type = 'hidden';
-  csrf.name = 'csrfmiddlewaretoken';
-  csrf.value = '{{ csrf_token }}';
-  form.appendChild(csrf);
+  form.action = '{% url "generate" %}';
+  form.style.display = 'none';
+
+  function tambah(nama, nilai) {
+    const i = document.createElement('input');
+    i.type = 'hidden'; i.name = nama; i.value = nilai == null ? '' : nilai;
+    form.appendChild(i);
+  }
+  tambah('csrfmiddlewaretoken', '{{ csrf_token }}');
+  Object.keys(d.fields || {}).forEach(function (k) { tambah(k, d.fields[k]); });
+  (d.kbli || []).forEach(function (k) { tambah('kbli_kode[]', k); });
+
   document.body.appendChild(form);
   form.submit();
-}
+  setTimeout(function () { form.remove(); }, 1000);
+  VS.toast('Dokumen sedang dibuat…', 'ok');
+});
+
+/* ---------- Hapus ---------- */
+$('#isi').on('click', '[data-hapus]', function () {
+  idHapus = $(this).data('hapus');
+  const d = VS.store.get(idHapus);
+  $('#hapus-nama').empty()
+    .append(document.createTextNode('Draft yang akan dihapus: '))
+    .append($('<strong></strong>').text(d ? (d.nama_pt || '(tanpa nama)') : ''));
+  VS.modal('modal-hapus', true);
+});
+
+$('#btn-hapus-ya').on('click', function () {
+  if (idHapus) {
+    VS.store.remove(idHapus);
+    VS.toast('Draft dihapus.', 'ok');
+    idHapus = null;
+    render();
+  }
+  VS.modal('modal-hapus', false);
+});
+
+/* ---------- Cadangan ---------- */
+$('#btn-ekspor').on('click', function () {
+  if (!VS.store.count()) { VS.toast('Belum ada draft untuk diekspor.', 'err'); return; }
+  const blob = new Blob([VS.store.exportJSON()], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const t = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = 'velloscript-draft-' + t + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  VS.toast('Berkas cadangan diunduh. Simpan di tempat aman.', 'ok');
+});
+
+$('#file-impor').on('change', function () {
+  const file = this.files && this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function () {
+    try {
+      const r = VS.store.importJSON(reader.result);
+      VS.toast(r.baru + ' draft baru, ' + r.diperbarui + ' diperbarui.', 'ok');
+      render();
+    } catch (e) {
+      VS.toast('Gagal mengimpor: ' + e.message, 'err');
+    }
+  };
+  reader.readAsText(file);
+  this.value = '';
+});
+
+$('#cari').on('input', render);
+$(render);
 </script>
 {% endblock %}

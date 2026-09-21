@@ -1,0 +1,602 @@
+{% extends 'base.html' %}
+{% block title %}Formulir · PT Perorangan · VELLOSCRIPT{% endblock %}
+{% block nav_form %}active{% endblock %}
+
+{% block body %}
+<div class="page">
+
+  <div class="page-head">
+    <div class="page-head-main">
+      <div class="eyebrow"><span id="mode-label">Draft baru</span></div>
+      <h1 class="title">Pernyataan Pendirian PT Perorangan</h1>
+      <p class="subtitle">Isi data di bawah, lalu unduh dokumen .docx yang siap dipakai.</p>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" onclick="VS.modal('modal-panduan', true)">
+      <i class="fa-solid fa-circle-question"></i> Panduan pengisian
+    </button>
+  </div>
+
+  <div class="subnav">
+    <div class="subnav-row">
+      <a href="#sec-perseroan" class="active" data-sec="sec-perseroan"><i class="fa-solid fa-building"></i> Data Perseroan</a>
+      <a href="#sec-kbli" data-sec="sec-kbli"><i class="fa-solid fa-briefcase"></i> Kegiatan Usaha <span class="badge badge-neutral" id="badge-kbli">0</span></a>
+      <a href="#sec-pemilik" data-sec="sec-pemilik"><i class="fa-solid fa-user"></i> Data Pemilik</a>
+      <div class="subnav-meta">
+        <div class="progress"><span id="progress-fill"></span></div>
+        <span class="pct" id="progress-pct">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <form id="main-form" action="{% url 'generate' %}" method="POST">
+    {% csrf_token %}
+
+    <!-- ============ DATA PERSEROAN ============ -->
+    <section class="card" id="sec-perseroan">
+      <div class="card-head">
+        <span class="card-ico"><i class="fa-solid fa-building"></i></span>
+        <div><h2>Data Perseroan</h2><p>Identitas dan kedudukan perseroan perorangan</p></div>
+      </div>
+      <div class="card-body">
+        <div class="grid">
+          <div class="field col-full">
+            <label class="label" for="nama_pt">Nama perseroan <span class="req">*</span></label>
+            <input type="text" name="nama_pt" id="nama_pt" placeholder="PT MAJU BERSAMA" required>
+            <span class="hint">Otomatis menjadi HURUF KAPITAL.</span>
+          </div>
+
+          <div class="field col-full">
+            <label class="label" for="alamat_pt">
+              Tempel alamat lengkap <span class="opt">— isi ini dulu, kolom di bawah terisi sendiri</span>
+            </label>
+            <textarea name="alamat_pt" id="alamat_pt" rows="2"
+              placeholder="Contoh: Jl. Melati No. 12, RT 001, RW 002, Kelurahan Maricaya, Kecamatan Makassar, Kota Makassar, Sulawesi Selatan"></textarea>
+            <span class="hint accent"><i class="fa-solid fa-wand-magic-sparkles"></i> Sistem mencoba mengurai jalan, RT, RW, desa, kecamatan, kota, dan provinsi.</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-label"><i class="fa-solid fa-location-dot"></i> Alamat perseroan</div>
+
+        <div class="grid">
+          <div class="field col-full">
+            <span class="label">Tipe wilayah</span>
+            <div class="seg" id="seg-pt">
+              <button type="button" class="seg-pt is-on" data-val="Kota">Kota</button>
+              <button type="button" class="seg-pt" data-val="Kabupaten">Kabupaten</button>
+            </div>
+            <input type="hidden" name="tipe_kab_pt" id="tipe_kab_pt" value="Kota">
+          </div>
+
+          <div class="field">
+            <label class="label" for="kota_pt">Kota / kabupaten <span class="req">*</span></label>
+            <input type="text" name="kota_pt" id="kota_pt" placeholder="Makassar" required>
+            <span class="hint">Tanpa kata "Kota"/"Kabupaten" — sudah dipilih di atas.</span>
+          </div>
+          <div class="field">
+            <label class="label" for="jalan_pt">Jalan</label>
+            <input type="text" name="jalan_pt" id="jalan_pt" placeholder="Jl. Melati No. 12">
+          </div>
+          <div class="field">
+            <label class="label" for="rt_pt">RT</label>
+            <input type="text" name="rt_pt" id="rt_pt" maxlength="10" placeholder="001">
+          </div>
+          <div class="field">
+            <label class="label" for="rw_pt">RW</label>
+            <input type="text" name="rw_pt" id="rw_pt" maxlength="10" placeholder="002">
+          </div>
+          <div class="field">
+            <label class="label" for="desa_pt">Kelurahan / desa</label>
+            <input type="text" name="desa_pt" id="desa_pt" placeholder="Maricaya">
+          </div>
+          <div class="field">
+            <label class="label" for="kecamatan_pt">Kecamatan</label>
+            <input type="text" name="kecamatan_pt" id="kecamatan_pt" placeholder="Makassar">
+          </div>
+          <div class="field">
+            <label class="label" for="provinsi_pt">Provinsi</label>
+            <input type="text" name="provinsi_pt" id="provinsi_pt" placeholder="Sulawesi Selatan">
+            <span class="hint">Nama provinsi saja, tanpa kata "Provinsi".</span>
+          </div>
+          <div class="field">
+            <label class="label" for="pos_pt">Kode pos <span class="opt">(opsional)</span></label>
+            <input type="text" name="pos_pt" id="pos_pt" maxlength="10" placeholder="90142">
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-label"><i class="fa-solid fa-coins"></i> Modal</div>
+
+        <div class="grid">
+          <div class="field">
+            <label class="label" for="modal_dasar">Modal usaha (Rp)</label>
+            <input type="number" name="modal_dasar" id="modal_dasar" placeholder="5000000" min="0">
+            <span class="hint accent" id="modal-info"></span>
+          </div>
+          <div class="field">
+            <label class="label" for="persen_disetor">Persentase modal disetor (%)</label>
+            <input type="number" name="persen_disetor" id="persen_disetor" value="100" min="1" max="100">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ KBLI ============ -->
+    <section class="card" id="sec-kbli">
+      <div class="card-head">
+        <span class="card-ico"><i class="fa-solid fa-briefcase"></i></span>
+        <div><h2>Kegiatan Usaha (KBLI)</h2><p>Klasifikasi Baku Lapangan Usaha Indonesia</p></div>
+      </div>
+      <div class="card-body">
+        <div id="wrapper-k"></div>
+        <button type="button" class="btn btn-dashed btn-block" onclick="tambahKBLI()">
+          <i class="fa-solid fa-plus"></i> Tambah KBLI
+        </button>
+      </div>
+    </section>
+
+    <!-- ============ DATA PEMILIK ============ -->
+    <section class="card" id="sec-pemilik">
+      <div class="card-head">
+        <span class="card-ico"><i class="fa-solid fa-user"></i></span>
+        <div><h2>Data Pemilik Usaha</h2><p>Identitas dan alamat pemilik perseroan perorangan</p></div>
+      </div>
+      <div class="card-body">
+        <div class="grid">
+          <div class="field col-full">
+            <label class="label" for="nama">Nama lengkap pemilik <span class="req">*</span></label>
+            <input type="text" name="nama" id="nama" placeholder="Nama sesuai KTP" required>
+            <span class="hint">Tanpa tanda koma di akhir — sistem merangkai sendiri.</span>
+          </div>
+          <div class="field">
+            <label class="label" for="gelar_depan">Gelar depan <span class="opt">(opsional)</span></label>
+            <input type="text" name="gelar_depan" id="gelar_depan" placeholder="Drs. H.">
+          </div>
+          <div class="field">
+            <label class="label" for="gelar_belakang">Gelar belakang <span class="opt">(opsional)</span></label>
+            <input type="text" name="gelar_belakang" id="gelar_belakang" placeholder="Sarjana Ekonomi">
+          </div>
+          <div class="field">
+            <label class="label" for="gelar_singkat">Singkatan gelar <span class="opt">(untuk penghadap)</span></label>
+            <input type="text" name="gelar_singkat" id="gelar_singkat" placeholder="S.E">
+          </div>
+          <div class="field">
+            <label class="label" for="nama_penghadap">Nama penghadap <span class="opt">(timpa manual)</span></label>
+            <input type="text" name="nama_penghadap" id="nama_penghadap" placeholder="Kosongkan agar otomatis">
+          </div>
+          <div class="field">
+            <label class="label" for="tgl_lahir">Tanggal lahir</label>
+            <input type="date" name="tgl_lahir" id="tgl_lahir">
+          </div>
+          <div class="field">
+            <label class="label" for="nik">NIK</label>
+            <input type="text" name="nik" id="nik" maxlength="16" inputmode="numeric"
+                   placeholder="16 digit angka"
+                   oninput="this.value=this.value.replace(/\D/g,'').slice(0,16)">
+          </div>
+          <div class="field col-full">
+            <label class="label" for="npwp">NPWP</label>
+            <input type="text" name="npwp" id="npwp" maxlength="30" placeholder="12.345.678.9-012.000">
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-label"><i class="fa-solid fa-location-dot"></i> Alamat pemilik</div>
+
+        <div class="grid">
+          <div class="field col-full">
+            <span class="label">Tipe wilayah</span>
+            <div class="seg" id="seg-pemilik">
+              <button type="button" class="seg-pemilik is-on" data-val="Kabupaten">Kabupaten</button>
+              <button type="button" class="seg-pemilik" data-val="Kota">Kota</button>
+            </div>
+            <input type="hidden" name="tipe_kab" id="tipe_kab" value="Kabupaten">
+          </div>
+          <div class="field">
+            <label class="label" for="kab">Kabupaten / kota</label>
+            <input type="text" name="kab" id="kab" placeholder="Maros">
+          </div>
+          <div class="field">
+            <label class="label" for="jalan">Jalan / dusun</label>
+            <input type="text" name="jalan" id="jalan" placeholder="Jl. Mawar No. 5">
+          </div>
+          <div class="field">
+            <label class="label" for="rt">RT</label>
+            <input type="text" name="rt" id="rt" maxlength="10" placeholder="001">
+          </div>
+          <div class="field">
+            <label class="label" for="rw">RW</label>
+            <input type="text" name="rw" id="rw" maxlength="10" placeholder="002">
+          </div>
+          <div class="field">
+            <label class="label" for="desa">Desa / kelurahan</label>
+            <input type="text" name="desa" id="desa" placeholder="Bontoala">
+          </div>
+          <div class="field">
+            <label class="label" for="kecamatan">Kecamatan</label>
+            <input type="text" name="kecamatan" id="kecamatan" placeholder="Bontoala">
+          </div>
+          <div class="field col-full">
+            <label class="label" for="provinsi">Provinsi</label>
+            <input type="text" name="provinsi" id="provinsi" placeholder="Sulawesi Selatan">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="actionbar">
+      <span class="badge badge-neutral" id="ab-status"><i class="fa-solid fa-circle-notch"></i> Belum lengkap</span>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-secondary" id="btn-simpan">
+        <i class="fa-solid fa-floppy-disk"></i> Simpan draft
+      </button>
+      <button type="submit" class="btn btn-primary">
+        <i class="fa-solid fa-file-word"></i> Generate .docx
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- ============ MODAL PANDUAN ============ -->
+<div class="modal" id="modal-panduan">
+  <div class="modal-box wide">
+    <div class="modal-head">
+      <span class="card-ico"><i class="fa-solid fa-circle-question"></i></span>
+      <h3>Panduan pengisian</h3>
+      <button type="button" class="icon-btn" onclick="VS.modal('modal-panduan', false)" aria-label="Tutup">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="callout">
+        <strong>Draft tersimpan di browser ini.</strong> Tidak dikirim ke server dan tidak terlihat
+        oleh orang lain. Kalau data browser dibersihkan atau ganti perangkat, draft ikut hilang —
+        cadangkan lewat tombol <strong>Ekspor</strong> di halaman Draft Tersimpan.
+      </div>
+      <h4>1. Kedudukan perseroan</h4>
+      <ul>
+        <li>Pilih <strong>tipe wilayah</strong> lewat tombol, lalu tulis <strong>nama daerahnya saja</strong>. Contoh: pilih "Kota", tulis "Makassar".</li>
+        <li>Nama perseroan otomatis menjadi HURUF KAPITAL.</li>
+      </ul>
+      <h4>2. Modal</h4>
+      <ul>
+        <li>Tulis <strong>angka saja</strong> tanpa titik atau koma. Contoh: <span class="code-pill">5000000</span> untuk 5 juta.</li>
+      </ul>
+      <h4>3. Data pemilik</h4>
+      <ul>
+        <li><strong>Jangan</strong> mengetik koma setelah nama atau titik setelah gelar depan — sistem merangkai tanda bacanya sendiri.</li>
+        <li><strong>NIK</strong> tepat 16 digit; kolomnya menolak huruf otomatis.</li>
+        <li><strong>Gelar belakang</strong> ditulis lengkap (Sarjana Ekonomi), <strong>singkatan gelar</strong> untuk bagian penghadap (S.E).</li>
+      </ul>
+      <h4>4. Alamat pemilik</h4>
+      <ul>
+        <li>Sama seperti perseroan: pilih tipe wilayah, lalu tulis nama daerahnya saja.</li>
+        <li><strong>Provinsi</strong> ditulis tanpa kata "Provinsi".</li>
+      </ul>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-primary btn-block" onclick="VS.modal('modal-panduan', false)">
+        <i class="fa-solid fa-check"></i> Mengerti
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ============================================================
+   Tipe wilayah
+   ============================================================ */
+function pasangSeg(wrapId, kelas, hiddenId) {
+  $('#' + wrapId).on('click', '.' + kelas, function () {
+    $('#' + wrapId + ' .' + kelas).removeClass('is-on');
+    $(this).addClass('is-on');
+    $('#' + hiddenId).val($(this).data('val'));
+    tandaiBerubah();
+  });
+}
+function setSeg(wrapId, kelas, hiddenId, val) {
+  var btn = $('#' + wrapId + ' .' + kelas).filter(function () { return $(this).data('val') === val; });
+  if (!btn.length) btn = $('#' + wrapId + ' .' + kelas).first();
+  $('#' + wrapId + ' .' + kelas).removeClass('is-on');
+  btn.addClass('is-on');
+  $('#' + hiddenId).val(btn.data('val'));
+}
+pasangSeg('seg-pt', 'seg-pt', 'tipe_kab_pt');
+pasangSeg('seg-pemilik', 'seg-pemilik', 'tipe_kab');
+
+/* ============================================================
+   KBLI
+   ============================================================ */
+let kbliCount = 0;
+
+function tambahKBLI(kode, judul) {
+  kbliCount++;
+  const id = 'kbli-' + kbliCount;
+  $('#wrapper-k').append(`
+    <div class="kbli-item" id="${id}">
+      <div class="kbli-top">
+        <span class="label"><i class="fa-solid fa-magnifying-glass"></i> Cari kegiatan usaha</span>
+        <button type="button" class="btn btn-danger-soft btn-sm" onclick="$('#${id}').remove();updateKbli();">
+          <i class="fa-solid fa-trash"></i> Hapus
+        </button>
+      </div>
+      <div class="combo">
+        <input type="text" class="kbli-input" autocomplete="off" placeholder="Ketik kode atau nama kegiatan usaha…">
+        <div class="combo-list"></div>
+      </div>
+      <input type="hidden" name="kbli_kode[]" class="kode-asli">
+      <div class="kbli-picked"><i class="fa-solid fa-circle-check"></i> <span class="kbli-sel-text"></span></div>
+    </div>`);
+
+  if (kode) pakaiKBLI($('#' + id), kode, judul || kode);
+  updateKbli();
+  return $('#' + id);
+}
+
+function pakaiKBLI($item, kode, judul) {
+  $item.find('.kbli-input').val(judul);
+  $item.find('.kode-asli').val(kode);
+  $item.find('.kbli-sel-text').text('Terpilih: ' + kode + ' — ' + judul);
+  $item.find('.kbli-picked').addClass('show');
+  updateKbli();
+}
+
+$('#wrapper-k').on('keyup', '.kbli-input', function () {
+  const $item = $(this).closest('.kbli-item');
+  const $drop = $item.find('.combo-list');
+  const q = $(this).val().trim();
+  if (q.length < 2) { $drop.hide(); return; }
+  $.getJSON('{% url "cari_kbli" %}', { q: q }, function (data) {
+    $drop.empty();
+    if (!data.length) { $drop.html("<div class='combo-opt'>Tidak ditemukan</div>").show(); return; }
+    data.forEach(function (item) {
+      const el = $('<div class="combo-opt"></div>');
+      el.append($('<strong></strong>').text(item.kode));
+      el.append(document.createTextNode(' — ' + item.judul));
+      el.on('click', function () { pakaiKBLI($item, item.kode, item.judul); $drop.hide(); });
+      $drop.append(el);
+    });
+    $drop.show();
+  });
+});
+
+$(document).on('click', function (e) {
+  if (!$(e.target).closest('.combo').length) $('.combo-list').hide();
+});
+
+function updateKbli() {
+  $('#badge-kbli').text($('.kbli-item').length);
+  updateProgress();
+  tandaiBerubah();
+}
+
+/* ============================================================
+   Progress
+   ============================================================ */
+function updateProgress() {
+  let score = 0;
+  if ($('#nama_pt').val()) score += 34;
+  if ($('#nama').val()) score += 33;
+  if ($('.kode-asli').filter(function () { return $(this).val(); }).length) score += 33;
+  $('#progress-fill').css('width', score + '%');
+  $('#progress-pct').text(score + '%');
+  const lengkap = score === 100;
+  $('#ab-status')
+    .toggleClass('badge-ok', lengkap)
+    .toggleClass('badge-neutral', !lengkap)
+    .html(lengkap ? '<i class="fa-solid fa-circle-check"></i> Siap digenerate'
+                  : '<i class="fa-solid fa-circle-notch"></i> Belum lengkap');
+}
+
+$('#modal_dasar').on('input', function () {
+  const v = parseInt($(this).val(), 10) || 0;
+  $('#modal-info').text(v > 0 ? (v / 1000000).toLocaleString('id-ID') + ' juta' : '');
+});
+
+/* ============================================================
+   Draft di browser
+   ============================================================ */
+const FIELDS = ['nama_pt','alamat_pt','tipe_kab_pt','kota_pt','jalan_pt','rt_pt','rw_pt','desa_pt',
+  'kecamatan_pt','provinsi_pt','pos_pt','modal_dasar','persen_disetor',
+  'nama','gelar_depan','gelar_belakang','gelar_singkat','nama_penghadap','tgl_lahir','nik','npwp',
+  'tipe_kab','kab','jalan','rt','rw','desa','kecamatan','provinsi'];
+
+let draftId = new URLSearchParams(location.search).get('id') || null;
+let simpanTimer = null;
+
+function bacaForm() {
+  const fields = {};
+  FIELDS.forEach(function (n) { fields[n] = $('#main-form [name="' + n + '"]').val() || ''; });
+  const kbli = [];
+  $('.kode-asli').each(function () { if ($(this).val()) kbli.push($(this).val()); });
+  return { fields: fields, kbli: kbli };
+}
+
+function isiForm(d) {
+  const f = d.fields || {};
+  FIELDS.forEach(function (n) {
+    if (n === 'tipe_kab_pt' || n === 'tipe_kab') return;
+    $('#main-form [name="' + n + '"]').val(f[n] || '');
+  });
+  setSeg('seg-pt', 'seg-pt', 'tipe_kab_pt', f.tipe_kab_pt || 'Kota');
+  setSeg('seg-pemilik', 'seg-pemilik', 'tipe_kab', f.tipe_kab || 'Kabupaten');
+  $('#modal_dasar').trigger('input');
+
+  $('#wrapper-k').empty();
+  kbliCount = 0;
+  const kodes = d.kbli || [];
+  if (!kodes.length) {
+    tambahKBLI();
+  } else {
+    kodes.forEach(function (kode) {
+      const $item = tambahKBLI(kode, kode);
+      $.getJSON('{% url "cari_kbli" %}', { q: kode }, function (data) {
+        const item = data.find(function (x) { return x.kode === kode; }) || data[0];
+        if (item) pakaiKBLI($item, item.kode, item.judul);
+      });
+    });
+  }
+  updateProgress();
+}
+
+function simpanDraft(diam) {
+  const nama = $('#nama_pt').val().trim();
+  if (!nama) {
+    if (!diam) VS.toast('Isi nama perseroan dulu sebelum menyimpan.', 'err');
+    return;
+  }
+  const d = bacaForm();
+  d.id = draftId;
+  d.nama_pt = nama;
+  const id = VS.store.save(d);
+  if (!id) return;
+  draftId = id;
+  VS.syncCount();
+  $('#mode-label').text('Tersimpan di browser ini');
+  if (!diam) VS.toast('Draft tersimpan di browser ini.', 'ok');
+}
+
+function tandaiBerubah() {
+  clearTimeout(simpanTimer);
+  simpanTimer = setTimeout(function () { simpanDraft(true); }, 1200);
+}
+
+$('#main-form').on('input change', 'input, textarea', function () {
+  updateProgress();
+  tandaiBerubah();
+});
+
+$('#btn-simpan').on('click', function () { simpanDraft(false); });
+
+/* Generate: simpan dulu, lalu biarkan form POST mengunduh dokumen */
+$('#main-form').on('submit', function () {
+  simpanDraft(true);
+  VS.toast('Dokumen sedang dibuat…', 'ok');
+});
+
+/* ============================================================
+   Ruang bawah untuk action bar yang dipatok di layar kecil
+   ============================================================ */
+function aturRuangActionbar() {
+  const bar = document.querySelector('.actionbar');
+  const form = document.getElementById('main-form');
+  if (!bar || !form) return;
+  form.style.paddingBottom = getComputedStyle(bar).position === 'fixed'
+    ? (bar.offsetHeight + 20) + 'px' : '';
+}
+$(window).on('load resize', aturRuangActionbar);
+if ('ResizeObserver' in window) {
+  const bar = document.querySelector('.actionbar');
+  if (bar) new ResizeObserver(aturRuangActionbar).observe(bar);
+}
+
+/* ============================================================
+   Sub-nav
+   ============================================================ */
+$('.subnav-row a[data-sec]').on('click', function (e) {
+  e.preventDefault();
+  const el = document.getElementById($(this).data('sec'));
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+if ('IntersectionObserver' in window) {
+  const obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (!en.isIntersecting) return;
+      $('.subnav-row a[data-sec]').removeClass('active');
+      $('.subnav-row a[data-sec="' + en.target.id + '"]').addClass('active');
+    });
+  }, { rootMargin: '-35% 0px -60% 0px' });
+  ['sec-perseroan', 'sec-kbli', 'sec-pemilik'].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) obs.observe(el);
+  });
+}
+
+/* ============================================================
+   Huruf otomatis
+   ============================================================ */
+function toTitleCase(s) {
+  return s.replace(/\w\S*/g, function (t) { return t.charAt(0).toUpperCase() + t.substr(1).toLowerCase(); });
+}
+$(document).on('input blur', '#nama_pt', function () {
+  const a = this.selectionStart, b = this.selectionEnd;
+  $(this).val($(this).val().toUpperCase());
+  try { this.setSelectionRange(a, b); } catch (e) {}
+});
+$(document).on('blur', '#kota_pt,#desa_pt,#kecamatan_pt,#provinsi_pt,#jalan_pt,#nama,#gelar_depan,#gelar_belakang,#kab,#jalan,#desa,#kecamatan,#provinsi', function () {
+  $(this).val(toTitleCase($(this).val()));
+});
+
+/* ============================================================
+   Urai alamat yang ditempel
+   ============================================================ */
+$('#alamat_pt').on('input paste change', function () {
+  try {
+    const teks = $(this).val();
+    if (!teks) return;
+    const m1 = teks.match(/(?:Jalan|Jl\.?)\s+([a-zA-Z0-9\s\.\/]+?)(?:,|\b(?:RT|RW|Desa|Kel|Kec|Kab|Kota|Prov)\b|$)/i);
+    if (m1) $('#jalan_pt').val(m1[1].trim());
+    const m2 = teks.match(/RT\.?\s*(\d+)/i);
+    if (m2) $('#rt_pt').val(m2[1].padStart(3, '0'));
+    const m3 = teks.match(/RW\.?\s*(\d+)/i);
+    if (m3) $('#rw_pt').val(m3[1].padStart(3, '0'));
+    const m4 = teks.match(/(?:Kecamatan|Kec\.?)\s+([a-zA-Z\s]+?)(?:,|\b(?:Kab|Kota|Prov|RT|RW)\b|$)/i);
+    if (m4) $('#kecamatan_pt').val(toTitleCase(m4[1].trim()));
+    const m5 = teks.match(/(?:Kelurahan|Kel\.?|Desa)\s+([a-zA-Z\s]+?)(?:,|\b(?:Kec|Kab|Kota|Prov|RT|RW)\b|$)/i);
+    if (m5) $('#desa_pt').val(toTitleCase(m5[1].trim()));
+    const mKab = teks.match(/(?:Kabupaten|Kab\.?)\s+([a-zA-Z\s]+?)(?:,|\b(?:Prov|RT|RW)\b|$)/i);
+    if (mKab) {
+      $('#kota_pt').val(toTitleCase(mKab[1].trim()));
+      setSeg('seg-pt', 'seg-pt', 'tipe_kab_pt', 'Kabupaten');
+    } else {
+      const mKota = teks.match(/(?:Kota)\s+([a-zA-Z\s]+?)(?:,|\b(?:Prov|RT|RW)\b|$)/i);
+      if (mKota) {
+        $('#kota_pt').val(toTitleCase(mKota[1].trim()));
+        setSeg('seg-pt', 'seg-pt', 'tipe_kab_pt', 'Kota');
+      }
+    }
+    const mProv = teks.match(/(?:Provinsi|Prov\.?)\s+([a-zA-Z\s]+?)(?:,|\b(?:RT|RW)\b|$)/i);
+    if (mProv) {
+      $('#provinsi_pt').val(toTitleCase(mProv[1].trim()));
+    } else {
+      const pop = teks.match(/(?:,\s*)(Sulawesi Selatan|Sulsel|DKI Jakarta|Jawa Barat|Jabar|Jawa Timur|Jatim|Banten)\s*$/i);
+      if (pop) {
+        let p = pop[1].toLowerCase();
+        if (p === 'sulsel') p = 'Sulawesi Selatan';
+        else if (p === 'jabar') p = 'Jawa Barat';
+        else if (p === 'jatim') p = 'Jawa Timur';
+        else p = pop[1];
+        $('#provinsi_pt').val(toTitleCase(p));
+      }
+    }
+    updateProgress();
+    tandaiBerubah();
+  } catch (err) {
+    VS.toast('Gagal mengurai alamat: ' + err.message, 'err');
+  }
+});
+
+/* ============================================================
+   Muat draft kalau dibuka dari halaman Draft Tersimpan
+   ============================================================ */
+$(function () {
+  if (draftId) {
+    const d = VS.store.get(draftId);
+    if (d) {
+      isiForm(d);
+      $('#mode-label').text('Mengedit draft tersimpan');
+    } else {
+      draftId = null;
+      VS.toast('Draft tidak ditemukan di browser ini.', 'err');
+      tambahKBLI();
+    }
+  } else {
+    tambahKBLI();
+  }
+  updateProgress();
+  aturRuangActionbar();
+});
+</script>
+{% endblock %}

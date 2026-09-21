@@ -1,41 +1,68 @@
 # VELLOSCRIPT — Draft PT Perorangan
 
-Aplikasi Django untuk membuat draft **Pernyataan Pendirian PT Perorangan** dan
+Aplikasi untuk membuat draft **Pernyataan Pendirian PT Perorangan** dan
 mengunduhnya sebagai dokumen `.docx`.
 
-## Fitur
+## Tanpa database
 
-- Form pengisian data perseroan, kegiatan usaha (KBLI), dan data pemilik
-- Pencarian KBLI dari database lokal (`kbli.db`) + rekomendasi AI opsional
-- Pengurai alamat otomatis: tempel satu alamat, kolom RT/RW/desa/kecamatan terisi
-- Generate dokumen `.docx` dari template Word
-- Riwayat draft dengan pencarian, catatan, edit, dan hapus
-- Tema terang & gelap, tampilan menyesuaikan layar HP
+Draft **disimpan di browser** masing-masing pengguna (`localStorage`).
+Server tidak menyimpan apa pun — tugasnya hanya dua:
 
-## Jalankan di lokal
+1. mencari kode KBLI dari `kbli.db` (dibaca saja), dan
+2. merender `.docx` dari template Word memakai `docxtpl`.
+
+Rendering dokumen sengaja tetap di server: penanda seperti `{{ JLN_PT }}`
+di dalam file Word terpecah ke beberapa bagian XML, dan `docxtpl`
+menanganinya dengan benar. Implementasi di sisi browser rawan menghasilkan
+dokumen rusak.
+
+### Konsekuensi yang perlu diketahui
+
+- Draft **tidak terbagi antar orang atau antar perangkat**.
+- Membersihkan data browser, ganti laptop, atau memakai mode penyamaran
+  berarti draft hilang.
+- **Cadangkan secara berkala** lewat tombol **Ekspor** di halaman
+  *Draft Tersimpan*, dan pulihkan lewat **Impor**.
+
+## Deploy ke Vercel
+
+Push ke GitHub, lalu di Vercel: **Add New → Project → Import**, pilih repo,
+**Deploy**. Selesai.
+
+Tidak ada Root Directory yang perlu diubah, tidak ada Build Command, dan
+**tidak ada environment variable yang perlu diisi** — `vercel.json` sudah
+mengatur semuanya.
+
+## Jalankan di komputer sendiri
 
 ```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 
-cp .env.example .env          # pastikan berisi DEBUG=True dan COOKIE_SECURE=False
+cp .env.example .env          # isinya cukup DEBUG=True
 
-.venv/bin/python manage.py migrate
-.venv/bin/python manage.py createsuperuser
 .venv/bin/python manage.py runserver
 ```
 
-Buka http://127.0.0.1:8000 — akan diarahkan ke halaman masuk.
+Buka http://127.0.0.1:8000 — tidak ada migrasi dan tidak ada pembuatan user,
+karena memang tidak ada database.
 
-## Deploy
+## Halaman
 
-Lihat **[DEPLOY_VERCEL.md](DEPLOY_VERCEL.md)**. Ringkasnya: push ke GitHub, lalu
-Import di Vercel dan isi environment variable — termasuk `DATABASE_URL` ke
-Postgres, karena SQLite tidak bisa dipakai di serverless.
+| URL | Fungsi |
+|---|---|
+| `/` | Formulir; draft otomatis tersimpan ke browser sambil diketik |
+| `/riwayat/` | Daftar draft tersimpan + Ekspor / Impor cadangan |
+| `/cari-kbli/?q=` | Pencarian KBLI (JSON) |
+| `/generate/` | POST data form → balas file `.docx` |
 
-## Catatan
+## Kalau mengubah file di static/
 
-- Halaman admin (Django `/admin/` dan panel custom) sudah dihapus. Pengelolaan
-  user lewat `manage.py createsuperuser`.
-- `staticfiles/` ikut di-commit karena Vercel tidak menjalankan `collectstatic`.
-  Setelah mengubah `static/`, jalankan `manage.py collectstatic --noinput --clear`.
+`staticfiles/` ikut di-commit karena Vercel tidak menjalankan
+`collectstatic`. Setelah mengubah `static/`, jalankan sebelum push:
+
+```bash
+.venv/bin/python manage.py collectstatic --noinput --clear
+```
+
+Mengubah `templates/` tidak perlu langkah ini.
